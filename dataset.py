@@ -9,7 +9,7 @@ import copy
 import time
 
 class AudioDatset(torch.utils.data.Dataset):
-    def __init__(self,data_path,prompt_path="/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/Qwen2-Audio-finetune/multiprompt.jsonl"):
+    def __init__(self,data_path,prompt_path=None):
         self.wav_scp = {}
         self.tasks = []
         self.utt2num_samples = {}
@@ -25,6 +25,7 @@ class AudioDatset(torch.utils.data.Dataset):
             for line in f:
                 item = json.loads(line)
                 self.prompt[item["task"]] = item["prompt"]
+                
         # with open(os.path.join(data_path,"utt2num_samples")) as f:
         #     for line in f:
         #         id,num_samples = line.strip().split(" ",1)
@@ -37,7 +38,7 @@ class AudioDatset(torch.utils.data.Dataset):
         prompt = self.prompt[self.tasks[idx]["task"]]
         audio = kaldiio.load_mat(self.wav_scp[key])[1].astype(np.float32) / 32768
         return {
-            "text":prompt+target,
+            "prompt":prompt,
             "audio":audio,
             "target":target
         }
@@ -45,13 +46,13 @@ class AudioDatset(torch.utils.data.Dataset):
     
 def collate_fn(samples,processor):
 
-    text = [_["text"] for _ in samples]
+    prompt = [_["prompt"] for _ in samples]
     audio = [ _["audio"] for _ in samples]
     target = [ _["target"] for _ in samples]
-    processed_data = processor(text=[i+j for i,j in zip(text,target)], audios=audio, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
+    processed_data = processor(text=[i+j for i,j in zip(prompt,target)], audios=audio, sampling_rate=processor.feature_extractor.sampling_rate, return_tensors="pt", padding=True)
     # 处理labels的生成
     labels = copy.deepcopy(processed_data["input_ids"])
-    text_ids = processor(text,return_tensors="pt", padding=True)
+    text_ids = processor(prompt,return_tensors="pt", padding=True)
     for i,attention_mask  in enumerate(text_ids["attention_mask"]):
         labels[i,:sum(attention_mask )] = -100
     processed_data["labels"]=labels
