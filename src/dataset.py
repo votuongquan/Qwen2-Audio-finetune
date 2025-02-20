@@ -7,13 +7,15 @@ import kaldiio
 from torch.nn.utils.rnn import pad_sequence
 import copy
 import time
+import soundfile
 
 class AudioDatset(torch.utils.data.Dataset):
-    def __init__(self,data_path,prompt_path=None):
+    def __init__(self,data_path,prompt_path=None,wav_type="ark"):
         self.wav_scp = {}
         self.tasks = []
         self.utt2num_samples = {}
         self.prompt = {}
+        self.wav_type = wav_type
         with open(os.path.join(data_path,"my_wav.scp")) as f:
             for line in f:
                 id,wav_path = line.strip().split(" ",1)
@@ -36,7 +38,12 @@ class AudioDatset(torch.utils.data.Dataset):
         key = self.tasks[idx]["key"]
         target = self.tasks[idx]["target"]
         prompt = self.prompt[self.tasks[idx]["task"]]
-        audio = kaldiio.load_mat(self.wav_scp[key])[1].astype(np.float32) / 32768
+        if self.wav_type == "ark":
+            audio = kaldiio.load_mat(self.wav_scp[key])[1].astype(np.float32) / 32768
+        elif self.wav_type == "wav":
+            audio = soundfile.read(self.wav_scp[key])[0]
+        else:
+            exit(1)
         return {
             "prompt":prompt,
             "audio":audio,

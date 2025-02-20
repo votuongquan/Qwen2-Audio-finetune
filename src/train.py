@@ -12,7 +12,7 @@ import math
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 import torch
-import torch_npu
+
 import random
 from torch.optim import lr_scheduler
 import logging
@@ -27,6 +27,8 @@ model_path = os.environ['model_path']
 train_data_path = os.environ['train_data_path']
 eval_data_path = os.environ['eval_data_path']
 device_type = os.environ['device_type'] 
+if device_type == "npu":
+    import torch_npu
 prompt_path = os.environ['prompt_path']
 save_path = os.environ['save_path']
 
@@ -42,7 +44,10 @@ warmup_steps = int(os.environ['warmup_steps'] )
 
 
 ## 固定随机种子
-torch.npu.manual_seed(seed)
+if device_type == "npu":
+    torch.npu.manual_seed(seed)
+elif device_type == "cuda":
+    torch.cuda.manual_seed(seed)
 torch.manual_seed(seed)
 random.seed(seed)
 ## 单机多卡
