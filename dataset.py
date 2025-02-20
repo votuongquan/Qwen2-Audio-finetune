@@ -21,11 +21,11 @@ class AudioDatset(torch.utils.data.Dataset):
         with open(os.path.join(data_path,"multitask.jsonl")) as f:
             for line in f:
                 self.tasks.append(json.loads(line))
-        with open(os.path.join(data_path,prompt_path)) as f:
+        with open(os.path.join(prompt_path)) as f:
             for line in f:
                 item = json.loads(line)
                 self.prompt[item["task"]] = item["prompt"]
-                
+
         # with open(os.path.join(data_path,"utt2num_samples")) as f:
         #     for line in f:
         #         id,num_samples = line.strip().split(" ",1)

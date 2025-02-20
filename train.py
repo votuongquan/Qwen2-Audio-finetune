@@ -27,6 +27,7 @@ train_data_path = os.environ['train_data_path']
 eval_data_path = os.environ['eval_data_path']
 device_type = os.environ['device_type'] 
 prompt_path = os.environ['prompt_path']
+save_path = os.environ['save_path']
 
 lr = float(os.environ['lr'] )
 seed = int(os.environ['seed'] )
@@ -83,41 +84,41 @@ best_eval_loss = math.inf
 train_bar = tqdm(train_dataloader)
 eval_bar = tqdm(eval_dataloader)
 for _ in range(train_epoch):
-    for step,batch in enumerate(train_bar):
+    for train_step,batch in enumerate(train_bar):
         # train 
         model.train()
         batch.to(device)
         outputs = model(**batch)
         loss = outputs.loss
         acc = compute_acc(outputs["logits"],batch["labels"])
-        train_bar.set_description(f"[Train] rank:{local_rank},loss:{loss:0.2},acc:{acc:0.2}")
+        train_bar.set_description(f"[Train] rank:{local_rank}, loss:{loss:0.2}, acc:{acc:0.2} ")
         optim.zero_grad()
         loss.backward()
         optim.step()
-        if step % eval_step == 0:
+        if train_step % eval_step == 0:
             # eval 
             eval_acc = 0
             eval_loss = 0
             with torch.no_grad():
-                for step,batch in enumerate(eval_bar):
+                for eval_step,batch in enumerate(eval_bar):
                     model.eval()
                     batch.to(device)
                     outputs = model(**batch)
                     loss = outputs.loss
                     acc = compute_acc(outputs["logits"],batch["labels"])
-                    eval_acc += loss.item()
-                    eval_loss += acc.item()
-                    train_bar.set_description(f"[Eval] rank:{local_rank},loss:{loss:0.2},acc:{acc:0.2}")
-            eval_acc = eval_acc / step
-            eval_loss = eval_loss/ step
+                    eval_loss += loss
+                    eval_acc += acc
+                    train_bar.set_description(f"[Eval] rank:{local_rank}, loss:{loss:0.2}, acc:{acc:0.2} ")
+            eval_acc = eval_acc / eval_step
+            eval_loss = eval_loss/ eval_step
             dist.all_reduce(eval_loss, op=dist.ReduceOp.SUM)
             dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
             print(f"Eval:loss {eval_loss} acc {eval_acc}")
-            if best_eval_loss > eval_loss:
+            # saving
+            if best_eval_loss > eval_loss and dist.get_rank() == 0:
+                print(f"[Saving] Better current loss {eval_loss} :{save_path+'/'+time.strftime('%H-%M',time.localtime())}")
                 best_eval_loss = eval_loss
-                if dist.get_rank() == 0:
-                    peft_model_id = "test"
-                    model.save_pretrained(peft_model_id)
+                model.module.save_pretrained(save_path+"/"+time.strftime("%H-%M",time.localtime()))
 
 
 
