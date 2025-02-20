@@ -13,10 +13,12 @@ export eval_step=2
 export train_epoch=5
 export prompt_path="./data/multiprompt.jsonl"
 export save_path="./exp/$(date +"%H%M")"
-## 
+export total_train_steps=100000
+export warmup_steps=1000
+## run
 cd $LOCAL_DIR
 torchrun \
 	--nnodes 1 \
 	--nproc_per_node 2 \
 	--master_port=29502 \
-	train.py
+	./src/train.py

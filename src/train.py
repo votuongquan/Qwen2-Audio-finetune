@@ -14,7 +14,8 @@ from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 import torch
 import torch_npu
 import random
-
+from torch.optim import lr_scheduler
+import logging
 ## 宏参数准备
 rank = int(os.environ['RANK'] )
 local_rank = int(os.environ['LOCAL_RANK'])
@@ -35,7 +36,8 @@ batch_size = int(os.environ['batch_size'] )
 eval_step = int(os.environ['eval_step'] )
 train_epoch = int(os.environ['train_epoch'] )
 device = f"{device_type}:{local_rank}"
-
+total_train_steps = int(os.environ['total_train_steps'] )
+warmup_steps = int(os.environ['warmup_steps'] )
 
 
 
@@ -48,9 +50,27 @@ def setup(rank,local_rank, world_size):
     dist.init_process_group(
         backend='hccl',    # 使用NCCL后端（GPU场景）
     )
-    # torch.cuda.set_device(f"gpu:{local_rank}")  # 绑定当前GPU
-    torch.npu.set_device(f"npu:{local_rank}")  # 绑定当前NPU
+    if device_type == "npu":
+        torch.npu.set_device(f"npu:{local_rank}")  # 绑定当前NPU
+    elif device_type =="cuda":
+        torch.cuda.set_device(f"gpu:{local_rank}")  # 绑定当前GPU
 setup(rank,local_rank,world_size)
+## 日志
+if dist.get_rank() == 1:
+    os.mkdir(save_path)
+torch.distributed.barrier()
+logger = logging.getLogger("my_logger")
+logger.setLevel(logging.DEBUG)  # 设置日志级别
+file_handler = logging.FileHandler(f"{save_path}/train_log")
+file_handler.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)  # 控制台只输出 INFO 及以上级别的日志
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
 ## 模型准备 数据集准备
 processor = AutoProcessor.from_pretrained(model_path,trust_remote_code=True)
 
@@ -63,6 +83,13 @@ model = DDP(model, device_ids=[local_rank])
 optim = torch.optim.AdamW(
     model.parameters(),
     lr=lr
+)
+scheduler = torch.optim.lr_scheduler.LambdaLR(
+    optim, 
+    lr_lambda=lambda step: (
+        min(step / warmup_steps, 1) if step < warmup_steps
+        else  max(0.0, 1 - (step - warmup_steps) / (total_train_steps - warmup_steps))
+    )
 )
 train_dataset = AudioDatset(train_data_path,prompt_path)
 sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
@@ -83,7 +110,7 @@ best_eval_acc = -math.inf
 best_eval_loss = math.inf
 train_bar = tqdm(train_dataloader)
 eval_bar = tqdm(eval_dataloader)
-for _ in range(train_epoch):
+for epoch in range(train_epoch):
     for train_step,batch in enumerate(train_bar):
         # train 
         model.train()
@@ -95,6 +122,7 @@ for _ in range(train_epoch):
         optim.zero_grad()
         loss.backward()
         optim.step()
+        scheduler.step()
         if train_step % eval_step == 0:
             # eval 
             eval_acc = 0
@@ -111,12 +139,13 @@ for _ in range(train_epoch):
                     train_bar.set_description(f"[Eval] rank:{local_rank}, loss:{loss:0.2}, acc:{acc:0.2} ")
             eval_acc = eval_acc / eval_step
             eval_loss = eval_loss/ eval_step
-            dist.all_reduce(eval_loss, op=dist.ReduceOp.SUM)
-            dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
-            print(f"Eval:loss {eval_loss} acc {eval_acc}")
+            dist.all_reduce(eval_loss, op=dist.ReduceOp.AVG)
+            dist.all_reduce(eval_acc, op=dist.ReduceOp.AVG)
+            if dist.get_rank() == 0:
+                logger.info(f"[Epoch {epoch} ] Eval:loss {eval_loss} acc {eval_acc}")
             # saving
             if best_eval_loss > eval_loss and dist.get_rank() == 0:
-                print(f"[Saving] Better current loss {eval_loss} :{save_path+'/'+time.strftime('%H-%M',time.localtime())}")
+                logger.info(f"[Saving] Better current loss {eval_loss} :{save_path+'/'+time.strftime('%H-%M',time.localtime())}")
                 best_eval_loss = eval_loss
                 model.module.save_pretrained(save_path+"/"+time.strftime("%H-%M",time.localtime()))
 
