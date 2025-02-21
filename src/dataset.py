@@ -1,5 +1,5 @@
 import torch
-import torch_npu
+# import torch_npu
 import os
 import json
 import numpy as np

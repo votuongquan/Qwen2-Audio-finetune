@@ -9,6 +9,7 @@ import time
 import torch.distributed as dist
 import os 
 import math
+import deepspeed
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 import torch
@@ -16,6 +17,7 @@ import functools
 import random
 from torch.optim import lr_scheduler
 import logging
+import json
 ## 宏参数准备
 rank = int(os.environ['RANK'] )
 local_rank = int(os.environ['LOCAL_RANK'])
@@ -40,7 +42,8 @@ train_epoch = int(os.environ['train_epoch'] )
 device = f"{device_type}:{local_rank}"
 total_train_steps = int(os.environ['total_train_steps'] )
 warmup_steps = int(os.environ['warmup_steps'] )
-
+with open("./config/ds.json") as f:
+    deepspeed_config = json.load(f)
 
 
 ## 固定随机种子
@@ -52,14 +55,15 @@ torch.manual_seed(seed)
 random.seed(seed)
 ## 单机多卡
 def setup(rank,local_rank, world_size):
+
     if device_type == "npu":
         torch.npu.set_device(f"npu:{local_rank}")  # 绑定当前NPU
-        dist.init_process_group(
-        backend='hccl',    # 使用NCCL后端（GPU场景）
+        deepspeed.init_distributed()(
+        backend='hccl',    # 使用Hccl后端（NPU场景）
     )
     elif device_type =="cuda":
-        torch.cuda.set_device(f"cuda:{local_rank}")  # 绑定当前GPU
-        dist.init_process_group(
+        torch.cuda.set_device(f"gpu:{local_rank}")  # 绑定当前GPU
+        deepspeed.init_distributed()(
         backend='nccl',    # 使用NCCL后端（GPU场景）
     )
 setup(rank,local_rank,world_size)
@@ -82,35 +86,19 @@ logger.addHandler(console_handler)
 ## model 
 processor = AutoProcessor.from_pretrained(model_path,trust_remote_code=True)
 
+
 # if dist.get_rank() == 0:
 model = Qwen2AudioForConditionalGeneration.from_pretrained(model_path)
 model = get_peft_model(model, peft_config)
-if device_type == "npu":
-    model = model.npu(local_rank)
-else:
-    model = model.cuda(local_rank)
+model = model.npu(local_rank)
 model.print_trainable_parameters()
-# if train_strategy == "ddp":
-model = DDP(model, device_ids=[local_rank])
-# elif train_strategy == "fsdp":
-#     model = FSDP(
-#         model,
-#         auto_wrap_policy=my_auto_wrap_policy,
-#         sharding_strategy=sharding_strategy,
-#         device_id=local_rank,
-#         use_orig_params=True # 允许冻结部分参数，默认为真需要所有参数可训练
-#     )
-optim = torch.optim.AdamW(
-    model.parameters(),
-    lr=lr
+parameters = filter(lambda p: p.requires_grad, model.parameters())
+
+model_engine, _, _, _ = deepspeed.initialize(
+    model=model, model_parameters=parameters, config=deepspeed_config
 )
-scheduler = torch.optim.lr_scheduler.LambdaLR(
-    optim, 
-    lr_lambda=lambda step: (
-        min(step / warmup_steps, 1) if step < warmup_steps
-        else  max(0.0, 1 - (step - warmup_steps) / (total_train_steps - warmup_steps))
-    )
-)
+
+
 train_dataset = AudioDatset(train_data_path,prompt_path,wav_type)
 sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
 train_dataloader  = torch.utils.data.DataLoader(train_dataset,batch_size=batch_size,collate_fn=partial(collate_fn,processor=processor),sampler=sampler)
@@ -133,25 +121,23 @@ eval_bar = tqdm(eval_dataloader)
 for epoch in range(train_epoch):
     for train_step,batch in enumerate(train_bar):
         # train 
-        model.train()
+        model_engine.train()
         batch.to(device)
-        outputs = model(**batch)
+        outputs = model_engine(**batch)
         loss = outputs.loss
         acc = compute_acc(outputs["logits"],batch["labels"])
         train_bar.set_description(f"[Train] rank:{local_rank}, loss:{loss:0.2}, acc:{acc:0.2} ")
-        optim.zero_grad()
-        loss.backward()
-        optim.step()
-        scheduler.step()
+        model_engine.backward(loss)
+        model_engine.step()
         if train_step + 1 % eval_step == 0:
             # eval 
             eval_acc = 0
             eval_loss = 0
             with torch.no_grad():
                 for eval_step,batch in enumerate(eval_bar):
-                    model.eval()
+                    model_engine.eval()
                     batch.to(device)
-                    outputs = model(**batch)
+                    outputs = model_engine(**batch)
                     loss = outputs.loss
                     acc = compute_acc(outputs["logits"],batch["labels"])
                     eval_loss += loss
@@ -169,7 +155,7 @@ for epoch in range(train_epoch):
             if best_eval_loss > eval_loss and dist.get_rank() == 0:
                     logger.info(f"[Saving] Better current loss {eval_loss} :{save_path+'/'+time.strftime('%H-%M',time.localtime())}")
                     best_eval_loss = eval_loss
-                    model.module.save_pretrained(save_path+"/"+time.strftime("%H-%M",time.localtime()))
+                    # model.module.save_pretrained(save_path+"/"+time.strftime("%H-%M",time.localtime()))
 
 
 
