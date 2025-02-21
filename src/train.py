@@ -52,9 +52,6 @@ torch.manual_seed(seed)
 random.seed(seed)
 ## 单机多卡
 def setup(rank,local_rank, world_size):
-    dist.init_process_group(
-        backend='hccl',    # 使用NCCL后端（GPU场景）
-    )
     if device_type == "npu":
         torch.npu.set_device(f"npu:{local_rank}")  # 绑定当前NPU
         dist.init_process_group(
