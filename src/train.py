@@ -13,14 +13,6 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 import torch
 import functools
-# from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
-# from torch.distributed.fsdp import ShardingStrategy
-# # `ShardingStrategy.NO_SHARD
-# # ShardingStrategy.SHARD_GRAD_OP
-# sharding_strategy = ShardingStrategy.HYBRID_SHARD
-# my_auto_wrap_policy = functools.partial(
-#         size_based_auto_wrap_policy, min_num_params=20000
-#     )
 import random
 from torch.optim import lr_scheduler
 import logging
@@ -65,8 +57,14 @@ def setup(rank,local_rank, world_size):
     )
     if device_type == "npu":
         torch.npu.set_device(f"npu:{local_rank}")  # 绑定当前NPU
+        dist.init_process_group(
+        backend='hccl',    # 使用NCCL后端（GPU场景）
+    )
     elif device_type =="cuda":
         torch.cuda.set_device(f"gpu:{local_rank}")  # 绑定当前GPU
+        dist.init_process_group(
+        backend='nccl',    # 使用NCCL后端（GPU场景）
+    )
 setup(rank,local_rank,world_size)
 ## 日志
 if dist.get_rank() == 1:
