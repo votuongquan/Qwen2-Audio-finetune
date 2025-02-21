@@ -12,7 +12,15 @@ import math
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 import torch
-
+import functools
+# from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy
+# from torch.distributed.fsdp import ShardingStrategy
+# # `ShardingStrategy.NO_SHARD
+# # ShardingStrategy.SHARD_GRAD_OP
+# sharding_strategy = ShardingStrategy.HYBRID_SHARD
+# my_auto_wrap_policy = functools.partial(
+#         size_based_auto_wrap_policy, min_num_params=20000
+#     )
 import random
 from torch.optim import lr_scheduler
 import logging
@@ -76,7 +84,7 @@ console_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
-## 模型准备 数据集准备
+## model 
 processor = AutoProcessor.from_pretrained(model_path,trust_remote_code=True)
 
 # if dist.get_rank() == 0:
@@ -84,7 +92,16 @@ model = Qwen2AudioForConditionalGeneration.from_pretrained(model_path)
 model = get_peft_model(model, peft_config)
 model = model.npu(local_rank)
 model.print_trainable_parameters()
+# if train_strategy == "ddp":
 model = DDP(model, device_ids=[local_rank])
+# elif train_strategy == "fsdp":
+#     model = FSDP(
+#         model,
+#         auto_wrap_policy=my_auto_wrap_policy,
+#         sharding_strategy=sharding_strategy,
+#         device_id=local_rank,
+#         use_orig_params=True # 允许冻结部分参数，默认为真需要所有参数可训练
+#     )
 optim = torch.optim.AdamW(
     model.parameters(),
     lr=lr
@@ -110,7 +127,7 @@ def compute_acc(logits,labels):
     labels_indices = labels != -100 
     acc = torch.sum(preds[:,-labels_len-1:-1][labels_indices] == labels[labels_indices]).float() /torch.sum(labels_indices).float()
     return acc
-## 训练
+## train 
 best_eval_acc = -math.inf
 best_eval_loss = math.inf
 train_bar = tqdm(train_dataloader)
@@ -128,7 +145,7 @@ for epoch in range(train_epoch):
         loss.backward()
         optim.step()
         scheduler.step()
-        if train_step % eval_step == 0:
+        if train_step + 1 % eval_step == 0:
             # eval 
             eval_acc = 0
             eval_loss = 0
@@ -144,15 +161,17 @@ for epoch in range(train_epoch):
                     train_bar.set_description(f"[Eval] rank:{local_rank}, loss:{loss:0.2}, acc:{acc:0.2} ")
             eval_acc = eval_acc / eval_step
             eval_loss = eval_loss/ eval_step
-            dist.all_reduce(eval_loss, op=dist.ReduceOp.AVG)
-            dist.all_reduce(eval_acc, op=dist.ReduceOp.AVG)
+            dist.all_reduce(eval_loss, op=dist.ReduceOp.SUM) 
+            dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
+            eval_acc = eval_acc / world_size
+            eval_loss = eval_loss / world_size
             if dist.get_rank() == 0:
                 logger.info(f"[Epoch {epoch} ] Eval:loss {eval_loss} acc {eval_acc}")
             # saving
             if best_eval_loss > eval_loss and dist.get_rank() == 0:
-                logger.info(f"[Saving] Better current loss {eval_loss} :{save_path+'/'+time.strftime('%H-%M',time.localtime())}")
-                best_eval_loss = eval_loss
-                model.module.save_pretrained(save_path+"/"+time.strftime("%H-%M",time.localtime()))
+                    logger.info(f"[Saving] Better current loss {eval_loss} :{save_path+'/'+time.strftime('%H-%M',time.localtime())}")
+                    best_eval_loss = eval_loss
+                    model.module.save_pretrained(save_path+"/"+time.strftime("%H-%M",time.localtime()))
 
 
 

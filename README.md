@@ -1,7 +1,7 @@
 
 # Qwen2-Audio-finetune
 [中文Readme](./README_zh.md)
-This is a repository prepared for fine-tuning Qwen2-Audio (note: no Instruct). It supports GPU and NPU, and the data supports reading and writing in ark and wav formats.
+This is a repository prepared for fine-tuning Qwen2-Audio (note: no Instruct). It supports GPU and NPU, and the data supports reading and writing in ark and wav formats. Support ddp and lora.
 
 ---
 
@@ -12,7 +12,7 @@ The following dependencies are required to run this project:
 ```plaintext
 numpy==1.26.0  
 torch==2.1.0  
-torch-npu==2.1.0.post10  
+torch-npu==2.1.0.post10  (if NPU)
 torchaudio==2.1.0  
 torchvision==0.16.0  
 soundfile  

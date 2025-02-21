@@ -9,12 +9,13 @@ export lr=1e-4
 export seed=1314
 export batch_size=1
 export device_type="npu" # npu cuda
-export eval_step=2
+export eval_step=2000
 export train_epoch=5
 export prompt_path="./data/multiprompt.jsonl"
 export save_path="./exp/$(date +"%H%M")"
 export total_train_steps=100000
 export warmup_steps=1000
+# export train_strategy=fsdp # ddp fsdp
 ## run
 cd $LOCAL_DIR
 torchrun \
