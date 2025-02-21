@@ -15,6 +15,7 @@ export prompt_path="./data/multiprompt.jsonl"
 export save_path="./exp/$(date +"%H%M")"
 export total_train_steps=100000
 export warmup_steps=1000
+export wav_type=ark # ark wav
 # export train_strategy=fsdp # ddp fsdp
 ## run
 cd $LOCAL_DIR

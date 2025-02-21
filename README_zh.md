@@ -6,7 +6,7 @@
 plaintext复制
 numpy==1.26.0
 torch==2.1.0
-torch-npu==2.1.0.post10 (if NPU)
+torch-npu==2.1.0.post10 (如果使用NPU)
 torchaudio==2.1.0
 torchvision==0.16.0
 soundfile
@@ -15,13 +15,20 @@ transformers==4.46.3
 # Train
 ## 数据准备
 请参考示例数据路径 /data/aishell-1 准备数据。
+```
+multitask.jsonl 
+my_wav.scp
+multiprompt.jsonl
+```
 ## 配置准备
 在 train.sh 中设置以下必要环境变量：
 ```
-export model_path="/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/Qwen2-Audio"
+LOCAL_DIR=
+export model_path=model/Qwen2-Audio
 export train_data_path="./data/aishell-1/asr/train"
 export eval_data_path="./data/aishell-1/asr/test"
 export device_type="npu" # 可选值：npu 或 cuda
+export wav_type=ark # ark wav
 ```
 ## 运行代码
 运行以下命令开始训练：

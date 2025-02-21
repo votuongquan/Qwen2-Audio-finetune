@@ -39,7 +39,7 @@ if device_type == "npu":
     import torch_npu
 prompt_path = os.environ['prompt_path']
 save_path = os.environ['save_path']
-
+wav_type = os.environ['wav_type']
 lr = float(os.environ['lr'] )
 seed = int(os.environ['seed'] )
 batch_size = int(os.environ['batch_size'] )
@@ -113,11 +113,11 @@ scheduler = torch.optim.lr_scheduler.LambdaLR(
         else  max(0.0, 1 - (step - warmup_steps) / (total_train_steps - warmup_steps))
     )
 )
-train_dataset = AudioDatset(train_data_path,prompt_path)
+train_dataset = AudioDatset(train_data_path,prompt_path,wav_type)
 sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
 train_dataloader  = torch.utils.data.DataLoader(train_dataset,batch_size=batch_size,collate_fn=partial(collate_fn,processor=processor),sampler=sampler)
 
-eval_dataset = AudioDatset(eval_data_path,prompt_path)
+eval_dataset = AudioDatset(eval_data_path,prompt_path,wav_type)
 sampler = torch.utils.data.distributed.DistributedSampler(eval_dataset)
 eval_dataloader  = torch.utils.data.DataLoader(eval_dataset,batch_size=batch_size,collate_fn=partial(collate_fn,processor=processor),sampler=sampler)
 
