@@ -1,5 +1,5 @@
 # Qwen2-Audio-finetune
-这是一份为微调 Qwen2-Audio（注意：没有 Instruct）准备的仓库，支持 GPU 和 NPU，数据支持 ark 和 wav 格式的读写,支持DDP和lora.
+这是一份为微调 Qwen2-Audio（注意：没有 Instruct）准备的仓库，支持 GPU 和 NPU，数据支持 ark 和 wav 格式的读写,支持DDP/deepspeed和lora,.
 # Requires
 以下是运行本项目所需的依赖环境：
 ```

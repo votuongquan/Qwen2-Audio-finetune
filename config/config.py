@@ -12,7 +12,8 @@ class PeftConfig:
 
 @dataclass
 class TrainConfig:
-    train_strategy : str = "cuda"
+    train_strategy : str = "ddp"
+    deepspeed_config: str = "./config/deepspeed.json"
     seed : int = 1234
     lr: float = 1e-4
     batch_size: int = 1

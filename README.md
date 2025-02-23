@@ -1,7 +1,7 @@
 # Qwen2-Audio-finetune
 
 [中文](./README_zh.md)
-This is a repository prepared for fine-tuning Qwen2-Audio (Note: Not Instruct), supporting both GPU and NPU, with data reading and writing in ark and wav formats, and supporting DDP and LoRA.
+This is a repository prepared for fine-tuning Qwen2-Audio (Note: Not Instruct), supporting both GPU and NPU, with data reading and writing in ark and wav formats, and supporting DDP/deepspeed and LoRA.
 
 # Requires
 The following are the required dependencies for running this project:
