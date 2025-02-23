@@ -24,16 +24,14 @@ multiprompt.jsonl
 在 train.sh 中设置以下必要环境变量：
 ```
 LOCAL_DIR=
-export model_path=model/Qwen2-Audio
-export train_data_path="./data/aishell-1/asr/train"
-export eval_data_path="./data/aishell-1/asr/test"
-export device_type="npu" # 可选值：npu 或 cuda
-export wav_type=ark # ark wav
+MODEL_PATH=
 ```
+在config/config.py中设置需要的变量
+
 ## 运行代码
 运行以下命令开始训练：
 ```
-bash run.sh
+bash train.sh
 ```
 # RoadMap
 

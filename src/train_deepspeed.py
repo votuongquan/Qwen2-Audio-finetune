@@ -46,42 +46,23 @@ with open("./config/ds.json") as f:
     deepspeed_config = json.load(f)
 
 
-## 固定随机种子
-if device_type == "npu":
-    torch.npu.manual_seed(seed)
-elif device_type == "cuda":
-    torch.cuda.manual_seed(seed)
-torch.manual_seed(seed)
-random.seed(seed)
+
 ## 单机多卡
 def setup(rank,local_rank, world_size):
 
     if device_type == "npu":
         torch.npu.set_device(f"npu:{local_rank}")  # 绑定当前NPU
-        deepspeed.init_distributed()(
+        deepspeed.init_distributed(
         backend='hccl',    # 使用Hccl后端（NPU场景）
     )
     elif device_type =="cuda":
         torch.cuda.set_device(f"gpu:{local_rank}")  # 绑定当前GPU
-        deepspeed.init_distributed()(
+        deepspeed.init_distributed(
         backend='nccl',    # 使用NCCL后端（GPU场景）
     )
 setup(rank,local_rank,world_size)
 ## 日志
-if dist.get_rank() == 1:
-    os.mkdir(save_path)
-torch.distributed.barrier()
-logger = logging.getLogger("my_logger")
-logger.setLevel(logging.DEBUG)  # 设置日志级别
-file_handler = logging.FileHandler(f"{save_path}/train_log")
-file_handler.setLevel(logging.DEBUG)
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)  # 控制台只输出 INFO 及以上级别的日志
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-file_handler.setFormatter(formatter)
-console_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
+
 
 ## model 
 processor = AutoProcessor.from_pretrained(model_path,trust_remote_code=True)

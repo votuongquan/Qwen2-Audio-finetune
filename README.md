@@ -29,17 +29,13 @@ multiprompt.jsonl
 Set the following necessary environment variables in train.sh:
 ```
 LOCAL_DIR=
-export model_path=model/Qwen2-Audio
-export train_data_path="./data/aishell-1/asr/train"
-export eval_data_path="./data/aishell-1/asr/test"
-export device_type="npu" # Options: npu or cuda
-export wav_type=ark # ark wav
+MODEL_PATH=
 ```
 
 ## Running the Code
 Run the following command to start training:
 ```
-bash run.sh
+bash train.sh
 ```
 
 # RoadMap
