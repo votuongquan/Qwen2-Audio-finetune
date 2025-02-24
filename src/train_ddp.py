@@ -34,7 +34,7 @@ def train_ddp(cfg):
     set_seed(cfg.train.seed)
     setup_ddp(cfg.env.device_type)
     dist.barrier()
-    scaler,autocast = set_amp(cfg.env.device_type)
+    # scaler,autocast = set_amp(cfg.env.device_type)
     if local_rank == 0:
         os.mkdir(cfg.env.save_path)
     dist.barrier()
@@ -46,7 +46,7 @@ def train_ddp(cfg):
     peft_cfg["target_modules"] = list(peft_cfg["target_modules"])
     peft_cfg = LoraConfig(**peft_cfg)
     model = Qwen2AudioForConditionalGeneration.from_pretrained(cfg.env.model_path,trust_remote_code=True)
-    model._merge_input_ids_with_audio_features = types.MethodType(_merge_input_ids_with_audio_features, model)
+    # model._merge_input_ids_with_audio_features = types.MethodType(_merge_input_ids_with_audio_features, model)
     model = get_peft_model(model, peft_cfg)
     model.to(device)
     model.print_trainable_parameters()
@@ -81,11 +81,14 @@ def train_ddp(cfg):
         for train_step,batch in enumerate(train_bar):
             # train 
             batch.to(device)
-            with autocast(dtype=torch.bfloat16):
-                outputs = model(**batch)
+            # with autocast(dtype=torch.bfloat16):
+            outputs = model(**batch)
             loss = outputs.loss
             acc = compute_acc(outputs["logits"],batch["labels"])
             train_bar.set_description(f"[Train] epoch:{epoch} rank:{local_rank}, loss:{loss:0.2}, acc:{acc:0.2} ")
+            optim.zero_grad()
+            loss.backward()
+            optim.step()
             # scaler.scale(loss).backward()
             # if (train_step + 1) % cfg.train.grad_accumulate_step == 0 or train_step == len(train_dataloader) - 1:
             #     scaler.step(optim)
