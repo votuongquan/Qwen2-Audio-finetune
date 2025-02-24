@@ -9,7 +9,7 @@ MODEL_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/Qwen2-
 TRIAN_DATA_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/train
 EVAL_DATA_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/dev
 TRAIN_STRATEGY=ddp # ddp deepspeed
-DEVICE_TYPE=npu # npu gpu
+DEVICE_TYPE=npu # npu cuda
 #parameters
 num_workers=8
 prefetch_factor=2
