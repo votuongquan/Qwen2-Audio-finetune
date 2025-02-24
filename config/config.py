@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 @dataclass
 class PeftConfig:
-    r: int = 64
+    r: int = 1
     lora_alpha: int = 16
     target_modules: List = field(default_factory=lambda: [ "q_proj", "v_proj", "o_proj", "up_proj","gate_proj","down_proj"])
     bias: str = "none"
@@ -18,7 +18,8 @@ class TrainConfig:
     lr: float = 1e-4
     batch_size: int = 1
     total_train_steps: int = 100000
-    eval_step: int = 20
+    grad_accumulate_step : int = 5
+    eval_step: int = 2000
     train_epoch: int = 5
     warmup_steps: int = 1000
 
@@ -28,6 +29,8 @@ class DataConfig:
     eval_data_path: str = "./data/aishell-1/asr/test"
     prompt_path: str = "./data/multiprompt.jsonl"
     wav_type: str = "ark"
+    num_workers: int = 8
+    prefetch_factor: int  = 4
 
 @dataclass
 class EnvConfig:
@@ -35,7 +38,13 @@ class EnvConfig:
     save_path: str = "./exp"
     model_path: str = ""
 
-
+@dataclass
+class SLAMLLMConfig:
+    encoder_path: str = "/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/whisper/large-v3.pt" 
+    encoder_dim : int = 1280
+    ds_rate: int = 5
+    llm_path: str = "/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/Qwen2.5-7B-Instruct"
+    llm_dim : int = 3584
 
 @dataclass
 class Config:
@@ -43,3 +52,4 @@ class Config:
     data: DataConfig = field(default_factory=DataConfig)
     env: EnvConfig = field(default_factory=EnvConfig)
     peft: PeftConfig = field(default_factory=PeftConfig)
+    slam: SLAMLLMConfig= field(default=SLAMLLMConfig)

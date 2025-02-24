@@ -1,7 +1,14 @@
 {
-    "train_batch_size": 4,
+    "gradient_accumulation_steps": 4,
+    "train_micro_batch_size_per_gpu": 2,
     "steps_per_print": 2000,
     "seed":1234,
+    "zero_optimization": {
+    "stage": 0
+    },
+    "bf16": {
+        "enabled": true
+    },
     "optimizer": {
       "type": "Adam",
       "params": {
@@ -21,7 +28,6 @@
         "warmup_max_lr": 0.001,
         "warmup_num_steps": 1000
       }
-    },
-    "wall_clock_breakdown": false,
-    "disable_injection": true 
+    }
+
   }

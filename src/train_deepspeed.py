@@ -4,7 +4,7 @@ from transformers import AutoProcessor, Qwen2AudioForConditionalGeneration
 from functools import partial
 from peft import get_peft_config, get_peft_model, LoraConfig, TaskType
 from tqdm import tqdm
-from .dataset import AudioDatset,collate_fn
+from .dataset import AudioDatset,collate_fn_qwen2audio
 import time
 import torch.distributed as dist
 import os 
@@ -56,11 +56,11 @@ def train_deepspeed(cfg):
     
     train_dataset = AudioDatset(cfg.data.train_data_path,cfg.data.prompt_path,cfg.data.wav_type)
     sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
-    train_dataloader  = torch.utils.data.DataLoader(train_dataset,batch_size=cfg.train.batch_size,collate_fn=partial(collate_fn,processor=processor),sampler=sampler)
+    train_dataloader  = torch.utils.data.DataLoader(train_dataset,batch_size=cfg.train.batch_size,collate_fn=partial(collate_fn_qwen2audio,processor=processor),sampler=sampler)
 
     eval_dataset = AudioDatset(cfg.data.eval_data_path,cfg.data.prompt_path,cfg.data.wav_type)
     sampler = torch.utils.data.distributed.DistributedSampler(eval_dataset)
-    eval_dataloader  = torch.utils.data.DataLoader(eval_dataset,batch_size=cfg.train.batch_size,collate_fn=partial(collate_fn,processor=processor),sampler=sampler)
+    eval_dataloader  = torch.utils.data.DataLoader(eval_dataset,batch_size=cfg.train.batch_size,collate_fn=partial(collate_fn_qwen2audio,processor=processor),sampler=sampler)
 
 
     ## train 

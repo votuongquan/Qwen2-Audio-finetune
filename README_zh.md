@@ -11,6 +11,9 @@ torchaudio==2.1.0
 torchvision==0.16.0
 soundfile
 transformers==4.46.3
+hydra
+OmegaConf
+deepspeed
 ```
 # Train
 ## 数据准备

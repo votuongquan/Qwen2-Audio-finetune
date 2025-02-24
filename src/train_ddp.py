@@ -4,11 +4,13 @@ from transformers import AutoProcessor, Qwen2AudioForConditionalGeneration
 from functools import partial
 from peft import get_peft_config, get_peft_model, LoraConfig, TaskType
 from tqdm import tqdm
-from .dataset import AudioDatset,collate_fn
+from .dataset import AudioDatset,collate_fn_qwen2audio
 import time
 import torch.distributed as dist
 import os 
+import types
 import math
+from src.qwen2audio_fix import _merge_input_ids_with_audio_features
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 import torch
@@ -21,7 +23,7 @@ from utils.init_process import setup_ddp
 import os
 from peft import LoraConfig
 from utils.functions import compute_acc
-
+from utils.set_amp import set_amp
 
 def train_ddp(cfg):
     ## 宏参数准备
@@ -32,10 +34,11 @@ def train_ddp(cfg):
     set_seed(cfg.train.seed)
     setup_ddp(cfg.env.device_type)
     dist.barrier()
+    scaler,autocast = set_amp(cfg.env.device_type)
     if local_rank == 0:
         os.mkdir(cfg.env.save_path)
     dist.barrier()
-    logger = set_logger(cfg.env.save_path)
+    # logger = set_logger(cfg.env.save_path)
 
     # model
     processor = AutoProcessor.from_pretrained(cfg.env.model_path,trust_remote_code=True)
@@ -43,9 +46,11 @@ def train_ddp(cfg):
     peft_cfg["target_modules"] = list(peft_cfg["target_modules"])
     peft_cfg = LoraConfig(**peft_cfg)
     model = Qwen2AudioForConditionalGeneration.from_pretrained(cfg.env.model_path,trust_remote_code=True)
+    model._merge_input_ids_with_audio_features = types.MethodType(_merge_input_ids_with_audio_features, model)
     model = get_peft_model(model, peft_cfg)
     model.to(device)
     model.print_trainable_parameters()
+
     model = DDP(model, device_ids=[local_rank])
     optim = torch.optim.AdamW(
         model.parameters(),
@@ -60,11 +65,11 @@ def train_ddp(cfg):
     )
     train_dataset = AudioDatset(cfg.data.train_data_path,cfg.data.prompt_path,cfg.data.wav_type)
     sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
-    train_dataloader  = torch.utils.data.DataLoader(train_dataset,batch_size=cfg.train.batch_size,collate_fn=partial(collate_fn,processor=processor),sampler=sampler)
+    train_dataloader  = torch.utils.data.DataLoader(train_dataset,batch_size=cfg.train.batch_size,num_workers=cfg.data.num_workers,collate_fn=partial(collate_fn_qwen2audio,processor=processor),sampler=sampler,prefetch_factor=cfg.data.prefetch_factor)
 
     eval_dataset = AudioDatset(cfg.data.eval_data_path,cfg.data.prompt_path,cfg.data.wav_type)
     sampler = torch.utils.data.distributed.DistributedSampler(eval_dataset)
-    eval_dataloader  = torch.utils.data.DataLoader(eval_dataset,batch_size=cfg.train.batch_size,collate_fn=partial(collate_fn,processor=processor),sampler=sampler)
+    eval_dataloader  = torch.utils.data.DataLoader(eval_dataset,batch_size=cfg.train.batch_size,num_workers=cfg.data.num_workers,collate_fn=partial(collate_fn_qwen2audio,processor=processor),sampler=sampler,prefetch_factor=cfg.data.prefetch_factor)
 
 
     ## train 
@@ -72,17 +77,21 @@ def train_ddp(cfg):
     best_eval_loss = math.inf
     for epoch in range(cfg.train.train_epoch):
         train_bar = tqdm(train_dataloader)
+        model.train()
         for train_step,batch in enumerate(train_bar):
             # train 
-            model.train()
             batch.to(device)
-            outputs = model(**batch)
+            with autocast(dtype=torch.bfloat16):
+                outputs = model(**batch)
             loss = outputs.loss
             acc = compute_acc(outputs["logits"],batch["labels"])
             train_bar.set_description(f"[Train] epoch:{epoch} rank:{local_rank}, loss:{loss:0.2}, acc:{acc:0.2} ")
-            optim.zero_grad()
-            loss.backward()
-            optim.step()
+            # scaler.scale(loss).backward()
+            # if (train_step + 1) % cfg.train.grad_accumulate_step == 0 or train_step == len(train_dataloader) - 1:
+            #     scaler.step(optim)
+            #     scaler.update()
+            #     optim.zero_grad()
+
             scheduler.step()
             if (train_step + 1) % cfg.train.eval_step == 0:
                 # eval 
@@ -105,11 +114,11 @@ def train_ddp(cfg):
                 dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
                 eval_acc = eval_acc / world_size
                 eval_loss = eval_loss / world_size
-                if dist.get_rank() == 0:
-                    logger.info(f"[Epoch {epoch} ] Eval:loss {eval_loss} acc {eval_acc}")
+                # if dist.get_rank() == 0:
+                    # logger.info(f"[Epoch {epoch} ] Eval:loss {eval_loss} acc {eval_acc}")
                 # saving
                 if best_eval_loss > eval_loss and dist.get_rank() == 0:
-                        logger.info(f"[Saving] Better current loss {eval_loss} :{cfg.env.save_path+'/'+time.strftime('%H-%M',time.localtime())}")
+                        # logger.info(f"[Saving] Better current loss {eval_loss} :{cfg.env.save_path+'/'+time.strftime('%H-%M',time.localtime())}")
                         best_eval_loss = eval_loss
                         model.module.save_pretrained(str(cfg.env.save_path+"/"+time.strftime("%H-%M",time.localtime())))
 
