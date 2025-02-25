@@ -38,7 +38,7 @@ def train_ddp(cfg):
     if local_rank == 0:
         os.mkdir(cfg.env.save_path)
     dist.barrier()
-    # logger = set_logger(cfg.env.save_path)
+    logger = set_logger(cfg.env.save_path)
 
     # model
     processor = AutoProcessor.from_pretrained(cfg.env.model_path,trust_remote_code=True)
@@ -117,8 +117,8 @@ def train_ddp(cfg):
                 dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
                 eval_acc = eval_acc / world_size
                 eval_loss = eval_loss / world_size
-                # if dist.get_rank() == 0:
-                    # logger.info(f"[Epoch {epoch} ] Eval:loss {eval_loss} acc {eval_acc}")
+                if dist.get_rank() == 0:
+                    logger.info(f"[Epoch {epoch} ] Eval:loss {eval_loss} acc {eval_acc}")
                 # saving
                 if best_eval_loss > eval_loss and dist.get_rank() == 0:
                         # logger.info(f"[Saving] Better current loss {eval_loss} :{cfg.env.save_path+'/'+time.strftime('%H-%M',time.localtime())}")

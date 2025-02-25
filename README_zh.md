@@ -1,5 +1,5 @@
 # Qwen2-Audio-finetune
-这是一份为微调 Qwen2-Audio（注意：没有 Instruct）准备的仓库，支持 GPU 和 NPU，数据支持 ark 和 wav 格式的读写,支持DDP/deepspeed和lora,.
+这是一份为微调 Qwen2-Audio准备的仓库，支持 GPU 和 NPU，数据支持 ark 和 wav 格式的读写,支持DDP/deepspeed和lora.
 # Requires
 以下是运行本项目所需的依赖环境：
 ```
@@ -23,6 +23,11 @@ multitask.jsonl
 my_wav.scp
 multiprompt.jsonl
 ```
+在train.sh中修改下面两个变量，或者干脆使用默认提供的数据，不进行准备
+```
+TRIAN_DATA_PATH
+EVAL_DATA_PATH
+```
 ## 配置准备
 在 train.sh 中设置以下必要环境变量：
 ```
@@ -40,7 +45,7 @@ bash train.sh
 
 ## 注意事项
 数据路径：请确保 train_data_path 和 eval_data_path 指向正确的数据目录。
-设备选择：根据你的硬件环境，将 device_type 设置为 npu 或 cuda。
+设备选择：根据你的硬件环境，将 device_type 设置为 npu 或 cuda，如果不使用npu,请注释所有的import torch_npu，如果遇到和npu有关的报错，统统修改为cuda
 依赖安装：请确保所有依赖已正确安装。如果未安装，可以使用以下命令：
 ```
 pip install numpy==1.26.0 torch==2.1.0 torch-npu==2.1.0.post10 torchaudio==2.1.0 torchvision==0.16.0

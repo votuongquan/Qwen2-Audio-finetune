@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 @dataclass
 class PeftConfig:
-    r: int = 1
+    r: int = 64
     lora_alpha: int = 16
     target_modules: List = field(default_factory=lambda: [ "q_proj", "v_proj", "o_proj", "up_proj","gate_proj","down_proj"])
     bias: str = "none"

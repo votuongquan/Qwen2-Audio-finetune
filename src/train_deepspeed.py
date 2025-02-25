@@ -35,8 +35,9 @@ def train_deepspeed(cfg):
     dist.barrier()
     if local_rank == 0:
         os.mkdir(cfg.env.save_path)
+        logger = set_logger(cfg.env.save_path)
     dist.barrier()
-    logger = set_logger(cfg.env.save_path)
+    
 
     # model
     processor = AutoProcessor.from_pretrained(cfg.env.model_path,trust_remote_code=True)

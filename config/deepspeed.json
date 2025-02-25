@@ -1,10 +1,10 @@
 {
     "gradient_accumulation_steps": 4,
-    "train_micro_batch_size_per_gpu": 2,
+    "train_micro_batch_size_per_gpu": 4,
     "steps_per_print": 2000,
     "seed":1234,
     "zero_optimization": {
-    "stage": 0
+      "stage": 1
     },
     "bf16": {
         "enabled": true
