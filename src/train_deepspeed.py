@@ -18,7 +18,7 @@ import deepspeed
 from torch.optim import lr_scheduler
 from utils.set_logger import set_logger
 from utils.set_seed import set_seed
-from utils.init_process import setup_ddp
+from utils.init_process import setup_ddp,setup_deepspeed
 import os
 from peft import LoraConfig
 from utils.functions import compute_acc
@@ -31,7 +31,7 @@ def train_deepspeed(cfg):
     device = f"{cfg.env.device_type}:{local_rank}"
     # init
     set_seed(cfg.train.seed)
-    setup_ddp(cfg.env.device_type)
+    setup_deepspeed(cfg.env.device_type)
     dist.barrier()
     if local_rank == 0:
         os.mkdir(cfg.env.save_path)
