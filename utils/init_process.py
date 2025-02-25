@@ -21,10 +21,10 @@ def setup_deepspeed(device_type):
     if device_type == "npu":
         torch.npu.set_device(f"npu:{local_rank}")  # 绑定当前NPU
         deepspeed.init_distributed(
-        backend='hccl',    # 使用NCCL后端（GPU场景）
+        dist_backend='hccl',    # 使用NCCL后端（GPU场景）
     )
     elif device_type =="cuda":
         torch.cuda.set_device(f"cuda:{local_rank}")  # 绑定当前GPU
         deepspeed.init_distributed(
-        backend='nccl',    # 使用NCCL后端（GPU场景）
+        dist_backend='nccl',    # 使用NCCL后端（GPU场景）
     )
