@@ -4,9 +4,9 @@ cd $LOCAL_DIR
 MODEL_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/Qwen2-Audio
 # TRIAN_DATA_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/multitask_asr/train
 # EVAL_DATA_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/multitask_asr/dev
-# TRIAN_DATA_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/train
-# EVAL_DATA_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/aishell-1/asr/dev
-TRAIN_STRATEGY=deepspeed # ddp deepspeed
+TRIAN_DATA_PATH=data/aishell-1/asr/test
+EVAL_DATA_PATH=data/aishell-1/asr/test
+TRAIN_STRATEGY=ddp # ddp deepspeed
 DEVICE_TYPE=npu # npu cuda
 #parameters
 num_workers=8

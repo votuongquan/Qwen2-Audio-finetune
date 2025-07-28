@@ -68,46 +68,76 @@ def train_deepspeed(cfg):
     best_eval_acc = -math.inf
     best_eval_loss = math.inf
     for epoch in range(cfg.train.train_epoch):
-        train_bar = tqdm(train_dataloader)
-        for train_step,batch in enumerate(train_bar):
-            # train 
+    # 只有 rank 0 显示训练进度条
+        if dist.get_rank() == 0:
+            train_bar = tqdm(train_dataloader, desc=f"[Train] epoch: {epoch}")
+        else:
+            train_bar = train_dataloader  # 非主进程不显示进度条
+        
+        for train_step, batch in enumerate(train_bar):
+            # 训练过程
             model_engine.train()
             batch.to(device)
-            outputs = model_engine(**batch)
+            outputs = model_engine(** batch)
             loss = outputs.loss
-            acc = compute_acc(outputs["logits"],batch["labels"])
-            train_bar.set_description(f"[Train] epoch:{epoch} rank:{local_rank}, loss:{loss:0.2}, acc:{acc:0.2} ")
+            acc = compute_acc(outputs["logits"], batch["labels"])
+            
+            # 只有 rank 0 更新训练进度条描述
+            if dist.get_rank() == 0:
+                train_bar.set_description(f"[Train] epoch:{epoch} rank:{local_rank}, loss:{loss:0.2}, acc:{acc:0.2}")
+            
             model_engine.backward(loss)
             model_engine.step()
             scheduler.step()
+            
             if (train_step + 1) % cfg.train.eval_step == 0:
-                # eval 
-                eval_acc = 0
-                eval_loss = 0
-                eval_bar = tqdm(eval_dataloader)
+                # 评估过程
+                eval_acc = 0.0
+                eval_loss = 0.0
+                
+                # 只有 rank 0 显示评估进度条
+                if dist.get_rank() == 0:
+                    eval_bar = tqdm(eval_dataloader, desc="[Eval]")
+                else:
+                    eval_bar = eval_dataloader  # 非主进程不显示进度条
+                
                 with torch.no_grad():
-                    for eval_step,batch in enumerate(eval_bar):
+                    for eval_step, batch in enumerate(eval_bar):
                         model_engine.eval()
                         batch.to(device)
                         outputs = model_engine(**batch)
                         loss = outputs.loss
-                        acc = compute_acc(outputs["logits"],batch["labels"])
-                        eval_loss += loss
-                        eval_acc += acc
-                        train_bar.set_description(f"[Eval] rank:{local_rank}, loss:{loss:0.2}, acc:{acc:0.2} ")
-                eval_acc = eval_acc / eval_step
-                eval_loss = eval_loss/ eval_step
-                dist.all_reduce(eval_loss, op=dist.ReduceOp.SUM) 
-                dist.all_reduce(eval_acc, op=dist.ReduceOp.SUM)
-                eval_acc = eval_acc / world_size
-                eval_loss = eval_loss / world_size
+                        acc = compute_acc(outputs["logits"], batch["labels"])
+                        eval_loss += loss.item()
+                        eval_acc += acc.item()
+                        
+                        # 只有 rank 0 更新评估进度条描述
+                        if dist.get_rank() == 0:
+                            eval_bar.set_description(f"[Eval] rank:{local_rank}, loss:{loss:0.2}, acc:{acc:0.2}")
+                
+                # 计算平均评估指标（避免除零错误）
+                total_eval_steps = eval_step + 1  # 从0开始计数，需+1
+                eval_acc = eval_acc / total_eval_steps
+                eval_loss = eval_loss / total_eval_steps
+                
+                # 多进程同步评估结果
+                eval_loss_tensor = torch.tensor(eval_loss, device=device)
+                eval_acc_tensor = torch.tensor(eval_acc, device=device)
+                dist.all_reduce(eval_loss_tensor, op=dist.ReduceOp.SUM)
+                dist.all_reduce(eval_acc_tensor, op=dist.ReduceOp.SUM)
+                eval_acc = eval_acc_tensor.item() / world_size
+                eval_loss = eval_loss_tensor.item() / world_size
+                
+                # 只有 rank 0 打印评估日志和保存模型
                 if dist.get_rank() == 0:
-                    logger.info(f"[Epoch {epoch} ] Eval:loss {eval_loss} acc {eval_acc}")
-                # saving
-                if best_eval_loss > eval_loss and dist.get_rank() == 0:
-                        logger.info(f"[Saving] Better current loss {eval_loss} :{cfg.env.save_path+'/'+time.strftime('%H-%M',time.localtime())}")
+                    logger.info(f"[Epoch {epoch} ] Eval: loss {eval_loss:.4f} acc {eval_acc:.4f}")
+                    
+                    # 保存最优模型
+                    if best_eval_loss > eval_loss:
+                        save_time = time.strftime('%H-%M', time.localtime())
+                        save_path = f"{cfg.env.save_path}/{save_time}"
+                        logger.info(f"[Saving] Better current loss {eval_loss:.4f} : {save_path}")
                         best_eval_loss = eval_loss
-                        model_engine.save_pretrained(str(cfg.env.save_path+"/"+time.strftime("%H-%M",time.localtime())))
-
+                        model_engine.save_pretrained(save_path)
 
 

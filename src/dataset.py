@@ -10,13 +10,13 @@ import time
 import soundfile
 
 class AudioDatset(torch.utils.data.Dataset):
-    def __init__(self,data_path,prompt_path=None,wav_type="ark"):
-        print("[Dataset] Processing")
+    def __init__(self,data_path,prompt_path=None,wav_type="ark",inference_mode = False):
         self.wav_scp = {}
         self.tasks = []
         self.utt2num_samples = {}
         self.prompt = {}
         self.wav_type = wav_type
+        self.inference_mode = inference_mode
         with open(os.path.join(data_path,"my_wav.scp")) as f:
             for line in f:
                 id,wav_path = line.strip().split(" ",1)
@@ -45,12 +45,20 @@ class AudioDatset(torch.utils.data.Dataset):
             audio = soundfile.read(self.wav_scp[key])[0]
         else:
             exit(1)
-        return {
-            "prompt":prompt,
-            "audio":audio,
-            "target":target
-        }
-    
+        if self.inference_mode == False:
+            return {
+                "prompt":prompt,
+                "audio":audio,
+                "target":target
+            }
+        else:
+            return  {
+                "prompt": prompt,
+                "audio": audio,
+                "target": "",
+                "key": key
+            }
+        
     
 def collate_fn_qwen2audio(samples,processor):
     prompt = [_["prompt"] for _ in samples]
@@ -61,24 +69,15 @@ def collate_fn_qwen2audio(samples,processor):
     labels = copy.deepcopy(processed_data["input_ids"])
     text_ids = processor(prompt,return_tensors="pt", padding=True)
     for i,attention_mask  in enumerate(text_ids["attention_mask"]):
-        labels[i,:sum(attention_mask )] = -100
+        labels[i,:sum(attention_mask ) + \
+        (processed_data["input_ids"][i] == processor.tokenizer.pad_token_id).sum().item()] = -100
     processed_data["labels"]=labels
+    if "key" in samples[0]:
+        keys  = [ _["key"] for _ in samples]
+        processed_data["keys"] = keys
     return  processed_data
 
-def collate_fn_slamllm(samples,tokenizer):
-    prompt = [_["prompt"] for _ in samples]
-    audio = [ _["audio"] for _ in samples]
-    target = [ _["target"] for _ in samples]
-    special_tokens = ["<|audio_bos|>","<|AUDIO|>","<|audio_eos|>"]
-    tokenizer.add_special_tokens({"additional_special_tokens": special_tokens})
-    processed_data = tokenizer(text=[i+j for i,j in zip(prompt,target)], return_tensors="pt")
-    # 处理labels的生成
-    labels = copy.deepcopy(processed_data["input_ids"])
-    text_ids = tokenizer(prompt,return_tensors="pt", padding=True)
-    for i,attention_mask  in enumerate(text_ids["attention_mask"]):
-        labels[i,:sum(attention_mask )] = -100
-    processed_data["labels"]=labels
-    return  processed_data
+
 
 
 

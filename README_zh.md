@@ -41,6 +41,10 @@ MODEL_PATH=
 ```
 bash train.sh
 ```
+## 解码
+```
+bash infer.sh
+```
 # RoadMap
 
 ## 注意事项

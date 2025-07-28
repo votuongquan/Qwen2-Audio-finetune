@@ -19,9 +19,16 @@ class TrainConfig:
     batch_size: int = 1
     total_train_steps: int = 100000
     grad_accumulate_step : int = 5
-    eval_step: int = 2000
+    eval_step: int = 10
     train_epoch: int = 5
     warmup_steps: int = 1000
+
+@dataclass
+class EvalConfig:
+    batch_size: int = 2
+    local_rank : int = 0
+    peft_path: str =""
+
 
 @dataclass
 class DataConfig:
@@ -36,7 +43,7 @@ class DataConfig:
 class EnvConfig:
     device_type: str = "cuda" # npu gpu
     save_path: str = "./exp"
-    model_path: str = ""
+    model_path: str = "/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/Qwen2-Audio-finetune/exp/15-00-13/15-03/"
 
 @dataclass
 class SLAMLLMConfig:
@@ -49,6 +56,7 @@ class SLAMLLMConfig:
 @dataclass
 class Config:
     train: TrainConfig = field(default_factory=TrainConfig)
+    eval: EvalConfig = field(default_factory=EvalConfig)
     data: DataConfig = field(default_factory=DataConfig)
     env: EnvConfig = field(default_factory=EnvConfig)
     peft: PeftConfig = field(default_factory=PeftConfig)

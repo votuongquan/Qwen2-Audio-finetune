@@ -43,7 +43,10 @@ Run the following command to start training:
 ```  
 bash train.sh  
 ```  
-
+## Decode
+```
+bash infer.sh
+```
 # RoadMap  
 
 ## Notes  
