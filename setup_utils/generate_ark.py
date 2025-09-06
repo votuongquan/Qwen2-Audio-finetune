@@ -55,5 +55,4 @@ def generate_kaldi_ark_scp(wav_dir, output_dir='.'):
                     # Update total offset
                     offset += len(utt_id) + 1 + len(wav_binary)
 
-Example usage:
 generate_kaldi_ark_scp(wav_dir=r'E:\School\Qwen2-Audio-finetune\vivos\train_full', output_dir=r'E:\School\Qwen2-Audio-finetune\test_output')
