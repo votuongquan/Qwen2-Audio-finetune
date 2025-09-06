@@ -2,9 +2,9 @@ LOCAL_DIR=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/Qwen2
 cd $LOCAL_DIR
 
 MODEL_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/Qwen2-Audio
-# TRIAN_DATA_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/multitask_asr/train
+# Train_DATA_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/multitask_asr/train
 # EVAL_DATA_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/multitask_asr/dev
-TRIAN_DATA_PATH=data/aishell-1/asr/test
+TRAIN_DATA_PATH=data/aishell-1/asr/test
 EVAL_DATA_PATH=data/aishell-1/asr/test
 TRAIN_STRATEGY=ddp # ddp deepspeed
 DEVICE_TYPE=npu # npu cuda
@@ -22,7 +22,7 @@ then
 		++train.train_strategy=$TRAIN_STRATEGY \
 		++env.device_type=$DEVICE_TYPE \
 		++env.model_path=$MODEL_PATH \
-		++data.train_data_path=$TRIAN_DATA_PATH \
+		++data.train_data_path=$Train_DATA_PATH \
 		++data.eval_data_path=$EVAL_DATA_PATH \
 		++data.num_workers=$num_workers \
 		++data.prefetch_factor=$prefetch_factor
@@ -37,7 +37,7 @@ export DEEPSPEED_CONFIG=./config/deepspeed.json
 		++train.deepspeed_config=$DEEPSPEED_CONFIG \
 		++env.device_type=$DEVICE_TYPE \
 		++env.model_path=$MODEL_PATH \
-		++data.train_data_path=$TRIAN_DATA_PATH \
+		++data.train_data_path=$Train_DATA_PATH \
 		++data.eval_data_path=$EVAL_DATA_PATH \
 
 
