@@ -8,7 +8,7 @@ def generate_scp_file(source_folder, output_scp, prefix):
     with open(output_scp, 'w') as f:
         for wav in wav_files:
             utterance_id = os.path.splitext(wav)[0]  # Remove .wav extension
-            wav_path = os.path.join(prefix, source_folder, wav).replace('\\', '/')
+            wav_path = os.path.join(prefix, wav).replace('\\', '/')
             f.write(f"{utterance_id} {wav_path}\n")
 
 def concatenate_scp_files(train_scp, eval_scp, output_scp):
@@ -21,18 +21,19 @@ def concatenate_scp_files(train_scp, eval_scp, output_scp):
 dest_folder = r'E:\School\Qwen2-Audio-finetune\scp_wav'  
 
 train_folder = r'E:\School\Qwen2-Audio-finetune\vivos\train' 
-eval_folder = r'E:\School\Qwen2-Audio-finetune\vivos\eval'    
+eval_folder = r'E:\School\Qwen2-Audio-finetune\vivos\eval'
+test_folder = r'E:\School\Qwen2-Audio-finetune\vivos\test'
    
 train_prefix = '/kaggle/input/vivos-newformat/vivos/train'    
-eval_prefix = '/kaggle/input/vivos-newformat/vivos/eval'      
+eval_prefix = '/kaggle/input/vivos-newformat/vivos/eval' 
+test_prefix = '/kaggle/input/vivos-newformat/vivos/test'
+     
 train_scp = os.path.join(dest_folder, 'train_wav.scp')        
 eval_scp = os.path.join(dest_folder, 'eval_wav.scp')          
-my_wav_scp = os.path.join(dest_folder, 'my_wav.scp')         
+test_scp = os.path.join(dest_folder, 'test_wav.scp')          
 
 os.makedirs(dest_folder, exist_ok=True)
 
-generate_scp_file(train_folder, train_scp, train_prefix)
-
-generate_scp_file(eval_folder, eval_scp, eval_prefix)
-
-concatenate_scp_files(train_scp, eval_scp, my_wav_scp)
+# generate_scp_file(train_folder, train_scp, train_prefix)
+# generate_scp_file(eval_folder, eval_scp, eval_prefix)
+generate_scp_file(eval_folder, test_scp, test_prefix)  # Using eval_folder for test as per original code
