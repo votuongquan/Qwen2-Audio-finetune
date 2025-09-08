@@ -1,0 +1,21 @@
+T vừa update dataset lên Kaggle link day: https://www.kaggle.com/datasets/vtngqun/vivos-newformat
+M cứ lấy nó làm input cho Kaggle notebook.
+Thằng tác giả bảo chạy wav files được nên dataset hiện lẫn scp files hiện tại là theo dạng wav file hết nhá
+
+T có để 1 hình png trong repo á, để m coi cấu trúc input khi m chọn input trên kaggle sẽ như nào
+
+Xong m clone repo của t về, muồn chỉnh gì đó thì tạo nhánh mới dưới local chỉnh sửa, sắp push lên, m chuyển branch như trên local rồi sài thôi. 
+Khi m reload lại chỗ working dir sẽ thấy.
+
+***Note***: Nhớ là mỗi lần chạy đều phải !pip install -r requirements.txt lại lần nữa nhá và cũng chỉnh config trên nhánh của m sao cho phù hợp và nhớ bật GPU
+
+M muốn chạy file bash trên kaggle thì nó giống như !pip install trong code cell á:
+!chmod +x <path_to_sh_file> (Vi du: !chmod +x train.sh) 
+
+Xong thì chạy file thôi: !<path_to_sh_file> (Vi du:!./your_script.sh) 
+
+Nay mai cứ coi code kĩ, hiểu rõ path các thứ là được. 
+T còn một số chỗ còn confirm với bro tác giả nữa nên có thể giờ chạy thử vẫn lỗi á
+
+Trong setup utils, có file generate_wav.py để đẻ ra mấy cái file scp á, m rảnh thì coi qua, để sau này cần sửa gì cũng tự sửa đc
+

@@ -20,7 +20,6 @@ def main_hydra(cfg):
     infer(cfg)
 
 if __name__ == "__main__":
-    # 使得hydra和deepspeed传递的参数兼容
     deepspeed_args, remaining_args = parse_deepspeed_args()
-    sys.argv = [sys.argv[0]] + remaining_args  # 仅传递 Hydra 能处理的参数
+    sys.argv = [sys.argv[0]] + remaining_args
     main_hydra()
