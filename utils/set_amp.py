@@ -1,5 +1,5 @@
 import torch
-import torch_npu
+# import torch_npu
 import os
 def set_amp(device_type):
     if device_type == "npu":
