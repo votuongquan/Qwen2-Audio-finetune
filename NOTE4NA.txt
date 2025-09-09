@@ -1,7 +1,5 @@
-T vừa update dataset lên Kaggle link day: https://www.kaggle.com/datasets/vtngqun/vivos-newformat
-M cứ lấy nó làm input cho Kaggle notebook.
 Thằng tác giả bảo chạy wav files được nên dataset hiện lẫn scp files hiện tại là theo dạng wav file hết nhá, 
-Cấu trúc nó đưa nè
+Cấu trúc nó đưa nè:
 vivos-newformat
 └── vivos
     ├── eval
@@ -14,20 +12,12 @@ vivos-newformat
         ├── multitask.jsonl
         ├── my_wav.scp
 
+T vừa update dataset lên Kaggle link day, (t đã thêm nó làm input cho file notebook): https://www.kaggle.com/datasets/vtngqun/vivos-newformat
 
-T có để 1 hình png trong repo á, để m coi cấu trúc input khi m chọn input trên kaggle sẽ giống vậy là ổn
+T đã thêm model Qwen 2 Audio lên Kaggle để dẫn path vô luôn rồi á,
+link đây (mặc dù t đã thêm sẵn vô file notebook rồi): https://www.kaggle.com/datasets/vtngqun/qwen2audio7b
 
-Xong m clone repo của t về, muồn chỉnh gì đó thì tạo nhánh mới dưới local chỉnh sửa, sắp push lên, m chuyển branch như trên local rồi sài thôi. 
-Khi m reload lại chỗ working dir sẽ thấy.
+T share m luôn link notebook Kaggle, có sẵn script chạy (t nghĩ z, cần chỉnh gì thì thêm): https://www.kaggle.com/code/vtngqun/qwen2audiofinetune
 
-***Note***: Nhớ là mỗi lần chạy đều phải !pip install -r requirements.txt lại lần nữa nhá và cũng chỉnh config trên nhánh của m sao cho phù hợp và nhớ bật GPU
 
-M muốn chạy file bash trên kaggle thì nó giống như !pip install trong code cell á:
-!chmod +x <path_to_sh_file> (Vi du: !chmod +x train.sh) 
-
-Xong thì chạy file thôi: !<path_to_sh_file> (Vi du:!./your_script.sh) 
-
-Nay mai cứ coi code kĩ, hiểu rõ path các thứ là được. 
-
-Trong setup utils, có file generate_scp.py để đẻ ra mấy cái file scp và generate_multitask.jsonl cho mấy cái multitask.jsonl á, m rảnh thì coi qua, để sau này cần sửa gì cũng tự sửa đc
 

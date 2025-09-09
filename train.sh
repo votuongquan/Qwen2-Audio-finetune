@@ -1,20 +1,16 @@
-LOCAL_DIR=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/Qwen2-Audio-finetune
+LOCAL_DIR=/kaggle/working/Qwen2-Audio-finetune
 cd $LOCAL_DIR
 
-MODEL_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/model/Qwen2-Audio
-# Train_DATA_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/multitask_asr/train
-# EVAL_DATA_PATH=/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/data/multitask_asr/dev
-TRAIN_DATA_PATH=data/aishell-1/asr/test
-EVAL_DATA_PATH=data/aishell-1/asr/test
+MODEL_PATH=/kaggle/input/qwen2audio7b/Qwen2-Audio-7B
+TRAIN_DATA_PATH=/kaggle/input/vivos-newformat/vivos/train
+EVAL_DATA_PATH=/kaggle/input/vivos-newformat/vivos/eval
 TRAIN_STRATEGY=ddp # ddp deepspeed
-DEVICE_TYPE=npu # npu cuda
+DEVICE_TYPE=cuda # npu or cuda
 #parameters
-num_workers=8
+num_workers=4
 prefetch_factor=2
 if [[ $TRAIN_STRATEGY == ddp ]]
 then
-# export ASCEND_VISIBLE_DEVICES=0,1 #CPU
-# export CUDA_VISIBLE_DEVICES=0,1 #GPU
 	torchrun \
 		--nnodes 1 \
 		--nproc_per_node 8 \
@@ -22,7 +18,7 @@ then
 		++train.train_strategy=$TRAIN_STRATEGY \
 		++env.device_type=$DEVICE_TYPE \
 		++env.model_path=$MODEL_PATH \
-		++data.train_data_path=$Train_DATA_PATH \
+		++data.train_data_path=$TRAIN_DATA_PATH \
 		++data.eval_data_path=$EVAL_DATA_PATH \
 		++data.num_workers=$num_workers \
 		++data.prefetch_factor=$prefetch_factor
@@ -37,7 +33,7 @@ export DEEPSPEED_CONFIG=./config/deepspeed.json
 		++train.deepspeed_config=$DEEPSPEED_CONFIG \
 		++env.device_type=$DEVICE_TYPE \
 		++env.model_path=$MODEL_PATH \
-		++data.train_data_path=$Train_DATA_PATH \
+		++data.train_data_path=$TRAIN_DATA_PATH \
 		++data.eval_data_path=$EVAL_DATA_PATH \
 
 

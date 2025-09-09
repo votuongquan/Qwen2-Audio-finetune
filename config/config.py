@@ -32,18 +32,18 @@ class EvalConfig:
 
 @dataclass
 class DataConfig:
-    train_data_path: str = "./data/aishell-1/asr/test"
-    eval_data_path: str = "./data/aishell-1/asr/test"
-    prompt_path: str = "./data/multiprompt.jsonl"
-    wav_type: str = "ark"
-    num_workers: int = 8
-    prefetch_factor: int  = 4
+    train_data_path: str = "/kaggle/input/vivos-newformat/vivos/train"
+    eval_data_path: str = "/kaggle/input/vivos-newformat/vivos/eval"
+    prompt_path: str = "/kaggle/input/vivos-newformat/multiprompt.jsonl"
+    wav_type: str = "wav"
+    num_workers: int = 4
+    prefetch_factor: int  = 2
 
 @dataclass
 class EnvConfig:
     device_type: str = "cuda" # npu gpu
     save_path: str = "./exp"
-    model_path: str = "/aistor/aispeech/hpc_stor01/home/fangyangui/workingspace/project/Qwen2-Audio-finetune/exp/15-00-13/15-03/"
+    model_path: str = "/kaggle/input/qwen2audio7b/Qwen2-Audio-7B"
 
 @dataclass
 class SLAMLLMConfig:
