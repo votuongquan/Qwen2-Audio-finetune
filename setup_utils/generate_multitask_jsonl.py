@@ -20,7 +20,7 @@ def convert_txt_to_jsonl(input_file, output_file, wav_folder):
                     outfile.write('\n')
 
 if __name__ == "__main__":
-    input_file = r"E:\School\Capstone\vivos\test\prompts.txt"
-    output_file = r"E:\School\Qwen2-Audio-finetune\scp_wav\test_multitask.jsonl"
-    wav_folder = r"E:\School\Qwen2-Audio-finetune\vivos\test"
+    input_file = r"E:\School\Capstone\vivos\train\prompts.txt"
+    output_file = r"E:\School\Qwen2-Audio-finetune\code\test_folder\multitask.jsonl"
+    wav_folder = r"E:\School\Qwen2-Audio-finetune\vivos\train"
     convert_txt_to_jsonl(input_file, output_file, wav_folder)

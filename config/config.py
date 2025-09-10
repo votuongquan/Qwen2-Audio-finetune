@@ -32,9 +32,9 @@ class EvalConfig:
 
 @dataclass
 class DataConfig:
-    train_data_path: str = "/kaggle/input/vivos-newformat/vivos/train"
-    eval_data_path: str = "/kaggle/input/vivos-newformat/vivos/eval"
-    prompt_path: str = "/kaggle/input/vivos-newformat/multiprompt.jsonl"
+    train_data_path: str = "/kaggle/input/vivos-ark/vivos_ark/train"
+    eval_data_path: str = "/kaggle/input/vivos-ark/vivos_ark/eval"
+    prompt_path: str = "/kaggle/input/vivos-ark/vivos_ark/multiprompt.jsonl"
     wav_type: str = "wav"
     num_workers: int = 4
     prefetch_factor: int  = 2
