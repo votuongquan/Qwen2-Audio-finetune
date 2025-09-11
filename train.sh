@@ -4,7 +4,7 @@ cd $LOCAL_DIR
 MODEL_PATH=/kaggle/input/qwen2audio7b/Qwen2-Audio-7B
 TRAIN_DATA_PATH=/kaggle/input/vivos-ark/vivos_ark/train
 EVAL_DATA_PATH=/kaggle/input/vivos-ark/vivos_ark/eval
-TRAIN_STRATEGY=ddp # ddp deepspeed
+TRAIN_STRATEGY=ddp # ddp or deepspeed
 DEVICE_TYPE=cuda # npu or cuda
 #parameters
 num_workers=4
